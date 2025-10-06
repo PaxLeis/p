@@ -10,16 +10,15 @@
     overflow: hidden;
     position: relative;
     font-family: Arial, sans-serif;
+    /* Set the background image to your GIF and ensure it covers the whole background */
+    background-image: url('https://media4.giphy.com/media/v1.Y2lkPTZjMDliOTUyZXR1aHpoYzE2bmkyMWo4MTlwMGJlN2h6OXIwZWpoNW81MnVrbjBnNiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/JQpH25Y6TrRQwtF0KY/200.gif');
+    background-size: cover; /* Make sure the background covers entire area */
+    background-position: center; /* Center the background image */
+    background-repeat: no-repeat; /* Prevent tiling */
   }
 
   .background-video {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: -1;
+    display: none; /* Hide the video since we're not using it */
   }
 
   .glow-text {
@@ -44,14 +43,14 @@
 </style>
 </head>
 <body>
-<video class="background-video" autoplay muted loop playsinline>
+<!-- Remove the video element or keep it hidden -->
+<!-- <video class="background-video" autoplay muted loop playsinline>
   <source src="https://nebulilabs.github.io/assets/loading.mp4" type="video/mp4" />
-</video>
+</video> -->
 <div class="glow-text">Please wait while NebuliOS loads your content</div>
 <script src="uv/uv.bundle.js" defer></script>
 <script src="uv/uv.config.js" defer></script>
 <script src="register-sw.js" defer></script>
 <script src="embed.js" defer></script>
-
 </body>
 </html>
