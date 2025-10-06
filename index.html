@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>realWeb Search</title>
+<style>
+  body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #f0f2f5;
+  }
+
+  /* Top bar with search */
+  #topbar {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  #search-input {
+    flex: 1;
+    padding: 10px 15px;
+    font-size: 1em;
+    border: 2px solid #ccc;
+    border-radius: 25px;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+
+  #search-input:focus {
+    border-color: #007bff;
+  }
+
+  #search-btn {
+    margin-left: 10px;
+    padding: 10px 20px;
+    font-size: 1em;
+    border: none;
+    border-radius: 25px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  #search-btn:hover {
+    background-color: #0056b3;
+  }
+
+  /* Tab bar styles */
+  #tab-bar {
+    display: flex;
+    overflow-x: auto;
+    background-color: #fff;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .tab {
+    padding: 10px 15px;
+    cursor: pointer;
+    white-space: nowrap;
+    border-right: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    position: relative;
+    transition: background-color 0.2s;
+  }
+
+  .tab.active {
+    background-color: #e9ecef;
+  }
+
+  .tab:hover {
+    background-color: #f1f1f1;
+  }
+
+  .close-btn {
+    margin-left: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #888;
+  }
+
+  /* Content area */
+#content-area {
+    height: calc(100vh - 120px);
+    overflow: auto;
+    padding: 10px 20px;
+    background-color: #fff;
+  }
+
+  /* Embedded iframe for search results */
+.search-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- Top bar with search -->
+<div id="topbar">
+  <input type="text" id="search-input" placeholder="Search the web..." />
+  <button id="search-btn">Search</button>
+  <button id="new-tab-btn" title="Open new tab" style="margin-left:10px;">＋</button>
+</div>
+
+<!-- Tab bar -->
+<div id="tab-bar"></div>
+
+<!-- Content area -->
+<div id="content-area"></div>
+
+<script>
+  const searchInput = document.getElementById('search-input');
+  const searchBtn = document.getElementById('search-btn');
+  const newTabBtn = document.getElementById('new-tab-btn');
+  const tabBar = document.getElementById('tab-bar');
+  const contentArea = document.getElementById('content-area');
+
+  let tabs = [];
+  let activeTabId = null;
+
+  // Function to create a new tab
+function createTab() {
+    const tabId = Date.now().toString();
+    const tabTitle = 'Tab ' + (tabs.length + 1);
+    const tab = {
+        id: tabId,
+        title: tabTitle,
+        iframe: null,
+    };
+
+    // Create tab element
+    const tabEl = document.createElement('div');
+    tabEl.className = 'tab';
+    tabEl.innerHTML = `
+      <span class="tab-title">${tabTitle}</span>
+      <span class="close-btn">&times;</span>
+    `;
+    tabEl.onclick = () => activateTab(tabId);
+    tabEl.querySelector('.close-btn').onclick = (e) => {
+        e.stopPropagation();
+        deleteTab(tabId);
+    };
+
+    tab.element = tabEl;
+    tabBar.appendChild(tabEl);
+    tabs.push(tab);
+    activateTab(tabId);
+}
+
+// Function to activate a tab
+function activateTab(id) {
+    tabs.forEach(t => {
+        if (t.id === id) {
+            t.element.classList.add('active');
+            activeTabId = id;
+            showTabContent(t);
+        } else {
+            t.element.classList.remove('active');
+        }
+    });
+}
+
+// Function to show tab content
+function showTabContent(tab) {
+    // If iframe exists, show it; else create it
+    if (!tab.iframe) {
+        const iframe = document.createElement('iframe');
+        iframe.className = 'search-frame';
+        iframe.src = 'about:blank'; // placeholder initially
+        tab.iframe = iframe;
+        contentArea.innerHTML = '';
+        contentArea.appendChild(iframe);
+    }
+    // Load search results into iframe
+    loadSearchResults(tab);
+}
+
+// Function to delete a tab
+function deleteTab(id) {
+    const index = tabs.findIndex(t => t.id === id);
+    if (index !== -1) {
+        const tab = tabs[index];
+        // Remove element
+        tab.element.remove();
+        // Remove iframe if exists
+        if (tab.iframe) {
+            tab.iframe.remove();
+        }
+        tabs.splice(index, 1);
+        // Activate another tab
+        if (tabs.length > 0) {
+            activateTab(tabs[Math.max(0, index - 1)].id);
+        } else {
+            // No tabs left
+            contentArea.innerHTML = '';
+            activeTabId = null;
+        }
+    }
+}
+
+// Function to load search results into iframe
+function loadSearchResults(tab) {
+    if (!activeSearchQuery) return;
+    // Since files are in same folder, relative path
+    const proxyUrl = 'embed.html?q=' + encodeURIComponent(activeSearchQuery);
+    if (tab.iframe) {
+        tab.iframe.src = proxyUrl;
+    }
+}
+
+// Variable to store current search query
+let activeSearchQuery = '';
+
+// Function to perform search
+function performSearch() {
+    const query = searchInput.value.trim();
+    if (!query) return;
+    activeSearchQuery = query;
+    if (activeTabId) {
+        const tab = tabs.find(t => t.id === activeTabId);
+        if (tab) {
+            loadSearchResults(tab);
+        }
+    } else {
+        // No tab open, create one
+        createTab();
+    }
+}
+
+// Initialize first tab
+createTab();
+
+// Event listeners
+searchBtn.onclick = performSearch;
+searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        performSearch();
+    }
+});
+newTabBtn.onclick = createTab;
+</script>
+
+</body>
+</html>
